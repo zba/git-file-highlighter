@@ -1,4 +1,5 @@
 {
+  "publisher": "AlexeyZbinyakov",
   "name": "git-file-highlight",
   "displayName": "Git File Highlight",
   "description": "Highlight files from specific git refs",
@@ -9,6 +10,8 @@
   "categories": [
     "Other"
   ],
+  "icon": "icon.png",
+  "repository": "https://github.com/zba/git-file-highlighter",
   "activationEvents": [
     "onStartupFinished",
     "workspaceContains:*.git"
