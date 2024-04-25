@@ -1,0 +1,66 @@
+{
+  "name": "git-file-highlight",
+  "displayName": "Git File Highlight",
+  "description": "Highlight files from specific git refs",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:*.git"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "colors": [
+      {
+        "id": "gitFileHighlight.ref1Color",
+        "description": "Color for ref 1",
+        "defaults": {
+          "light": "#3b063d", 
+          "dark": "#FF69B4", 
+          "highContrast": "#00FF00"  
+        }
+      },
+      {
+        "id": "gitFileHighlight.ref2Color",
+        "description": "Color for ref 2",
+        "defaults": {
+          "light": "#0a253a",
+          "dark": "#00BFFF",
+          "highContrast": "#FFFF00"
+        }
+      },
+      {
+        "id": "gitFileHighlight.ref3Color",
+        "description": "Color for ref 3",
+        "defaults": {
+          "light": "#312206",
+          "dark": "#FFD700",
+          "highContrast": "#FF00FF"
+        }
+      }
+    ],
+    "configuration": {
+      "title": "Git File Highlight",
+      "properties": {
+        "gitFileHighlight.ref1": {
+          "type": "string",
+          "default": "HEAD"
+        },
+        "gitFileHighlight.ref2": {
+          "type": "string",
+          "default": ""
+        },
+        "gitFileHighlight.ref3": {
+          "type": "string",
+          "default": ""
+        }
+
+      }
+    }
+  }
+}
