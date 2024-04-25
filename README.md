@@ -1,7 +1,7 @@
 # Git File Highlight for Visual Studio Code
 ### Git File Highlight is a Visual Studio Code extension that highlights files in your explorer view that have changed based on specific Git references.
+![Git File Highlight Screenshot](screenshot.png)
 ![Git File Highlight Logo](logo.png)
-
 ## Features
 
 - Highlight files changed between any two commits, branches, or tags.
