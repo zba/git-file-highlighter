@@ -2,18 +2,16 @@ const vscode = require('vscode');
 const cp = require('child_process');
 const path = require('path');
 
-// Функция для получения списка измененных файлов из git diff
 let filesChangedCache = {}; // Кэш измененных файлов
 let lastCallTime = {}; // Время последнего вызова для каждого ref
 
-// Функция для получения списка измененных файлов из git diff с throttle
 async function getFilesChanged(ref) {
   const now = Date.now();
   if (filesChangedCache[ref] && now - lastCallTime[ref] < 100) {
-    return filesChangedCache[ref]; // Возвращаем из кэша, если вызов был меньше 100 мс назад
+    return filesChangedCache[ref];
   }
 
-  lastCallTime[ref] = now; // Обновляем время последнего вызова
+  lastCallTime[ref] = now;
 
   return new Promise((resolve, reject) => {
     const child = cp.spawn('git', ['diff', `${ref}`, `${ref}^`, '--name-only'], { cwd: vscode.workspace.rootPath });
@@ -34,15 +32,17 @@ async function getFilesChanged(ref) {
 }
 
 class GitFileDecorationProvider {
+  constructor() {
+    this._onDidChangeFileDecorations = new vscode.EventEmitter();
+    this.onDidChangeFileDecorations = this._onDidChangeFileDecorations.event;
+  }
+
   async provideFileDecoration(uri) {
     const config = vscode.workspace.getConfiguration('gitFileHighlight');
     const refs = config.get('refs');
-
-    // Получаем относительный путь к файлу
     const relativePath = vscode.workspace.asRelativePath(uri);
 
-    // Проверяем, относится ли файл к какому-либо ref
-    for (const refN of [1,2,3]) {
+    for (const refN of [1, 2, 3]) {
       const ref = config.get('ref' + refN);
       if (!ref) continue;
       const color = 'gitFileHighlight.ref' + refN + 'Color';
@@ -52,18 +52,40 @@ class GitFileDecorationProvider {
       }
     }
 
-    return undefined; // Если файл не нуждается в декорации
+    return undefined;
+  }
+
+  fireDidChangeFileDecorations() {
+    this._onDidChangeFileDecorations.fire();
   }
 }
 
 function activate(context) {
-  // Регистрация провайдера декораций
   const decorationProvider = new GitFileDecorationProvider();
   context.subscriptions.push(vscode.window.registerFileDecorationProvider(decorationProvider));
-
-  // Обновляем декорации при изменении дерева файлов
   context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(() => {
     decorationProvider.fireDidChangeFileDecorations();
+  }));
+
+  // Обновляем декорации при изменении конфигурации
+  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
+    if (e.affectsConfiguration('gitFileHighlight')) {
+      decorationProvider.fireDidChangeFileDecorations();
+    }
+  }));
+
+  // Обновляем декорации при изменении файлов в рабочем пространстве
+  context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(document => {
+    const uri = document.uri;
+    const relativePath = vscode.workspace.asRelativePath(uri);
+    const config = vscode.workspace.getConfiguration('gitFileHighlight');
+    for (const refN of [1, 2, 3]) {
+      const ref = config.get('ref' + refN);
+      if (ref && filesChangedCache[ref]?.includes(relativePath)) {
+        decorationProvider.fireDidChangeFileDecorations();
+        break;
+      }
+    }
   }));
 }
 
