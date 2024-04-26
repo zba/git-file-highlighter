@@ -38,11 +38,15 @@ async function getFilesChanged(ref) {
   const gitRoot = await getGitRoot(cwd);
 
   const gitDiffPromise = new Promise((resolve, reject) => {
-    const child = cp.spawn('git', ['diff', `${ref}`, `${ref}^`, '--name-only', '--relative'], { cwd: gitRoot });
+    const child = cp.spawn('git', ['log', "--pretty=format:", '--name-only' , `${ref}...${ref}^`, '--relative'], { cwd: gitRoot });
     let stdout = '';
     child.stdout.on('data', (data) => {
       stdout += data.toString();
     });
+    let stderr = '';
+    child.stderr.on('data', (data) => {
+      stderr += data.toString();
+    })
     child.on('close', (code) => {
       if (code !== 0) {
         reject(new Error(`git diff exited with code ${code}`));
