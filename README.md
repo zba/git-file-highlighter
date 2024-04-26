@@ -29,8 +29,16 @@ Here's a sample configuration for your `settings.json`:
 "gitFileHighlight.ref3": "feature-branch"
 ```
 
+by default only ref1 set to HEAD.
+
 Feedback
 If you have suggestions or issues, please feel free to open an issue on GitHub.
+<details>
+  <summary>note</summary>
+  
+  Most of code made by geminy 1.5 LLM model
+</details>
+
 
 Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

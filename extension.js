@@ -37,7 +37,7 @@ async function getFilesChanged(ref) {
   const cwd = editor ? path.dirname(editor.document.uri.fsPath) : vscode.workspace.rootPath;
   const gitRoot = await getGitRoot(cwd);
 
-  return new Promise((resolve, reject) => {
+  const gitDiffPromise = new Promise((resolve, reject) => {
     const child = cp.spawn('git', ['diff', `${ref}`, `${ref}^`, '--name-only', '--relative'], { cwd: gitRoot });
     let stdout = '';
     child.stdout.on('data', (data) => {
@@ -48,12 +48,39 @@ async function getFilesChanged(ref) {
         reject(new Error(`git diff exited with code ${code}`));
         return;
       }
-      const filesChanged = stdout.trim().split('\n').map(file => path.normalize(path.resolve(gitRoot, file)));
-      filesChangedCache[ref] = filesChanged;
-      resolve(filesChanged);
+      resolve(stdout.trim().split('\n').map(file => path.normalize(path.resolve(gitRoot, file))));
     });
   });
+
+  const gitStatusPromise = new Promise((resolve, reject) => {
+    const child = cp.spawn('git', ['status', '--porcelain'], { cwd: gitRoot });
+    let stdout = '';
+    child.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+    child.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`git status exited with code ${code}`));
+        return;
+      }
+      // Filter out only modified or untracked files
+      resolve(stdout.trim().split('\n')
+        .filter(line => line.startsWith(' M') || line.startsWith('??'))
+        .map(line => path.normalize(path.resolve(gitRoot, line.slice(3)))));
+    });
+  });
+
+  try {
+    const [diffFiles, statusFiles] = await Promise.all([gitDiffPromise, gitStatusPromise]);
+    const filesChanged = diffFiles.filter(file => !statusFiles.includes(file));
+    filesChangedCache[ref] = filesChanged;
+    return filesChanged;
+  } catch (error) {
+    console.error('Error fetching changed files:', error);
+    return [];
+  }
 }
+
 
 class GitFileDecorationProvider {
   constructor() {
@@ -71,9 +98,6 @@ class GitFileDecorationProvider {
       if (!ref) continue;
       const color = 'gitFileHighlight.ref' + refN + 'Color';
       const filesChanged = await getFilesChanged(ref);
-      if (fullPath.includes('.dockerignore')) {
-        console.log(filesChanged, fullPath, relativePath);
-      }
       if (filesChanged.some(changedPath => fullPath === changedPath || changedPath.startsWith(fullPath))) {
         return new vscode.FileDecoration(null, null, new vscode.ThemeColor(color));
       }
