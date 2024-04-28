@@ -3,7 +3,7 @@
   "name": "git-file-highlight",
   "displayName": "Git File Highlight",
   "description": "Highlight files from specific git refs",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.70.0"
   },

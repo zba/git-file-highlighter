@@ -39,7 +39,7 @@ async function getGitRoot(cwd) {
 let filesChangedPromise; // Глобальный промис для всех ref
 
 async function getAllFilesChanged() {
-    if (filesChangedPromise) {
+    if (filesChangedPromise && !filesChangedPromise._didResolve) {
         return filesChangedPromise;
     }
 
@@ -49,7 +49,13 @@ async function getAllFilesChanged() {
         const filesChanged = {};
         const editor = vscode.window.activeTextEditor;
         const cwd = editor ? path.dirname(editor.document.uri.fsPath) : vscode.workspace.rootPath;
-        const gitRoot = path.normalize(await getGitRoot(cwd));
+        let gitRoot;
+        try {
+          gitRoot = path.normalize(await getGitRoot(cwd));
+        } catch (error) {
+          filesChangedPromise._didResolve = true;
+          throw error;
+        }
 
         for (const refName of refs) {
             const ref = config.get(refName);
@@ -58,7 +64,7 @@ async function getAllFilesChanged() {
             try {
                 const diffFiles = await runSpawnCommand(
                     'git',
-                    ['log', '--pretty=format:', '--name-only', `${ref}...${ref}^`, '--relative'],
+                    ['log', '--pretty=format:', '--name-only', `${ref}...${ref}^`, '--relative', '--diff-filter=d'],
                     { cwd: gitRoot }
                 );
                 const statusFiles = await runSpawnCommand('git', ['status', '--porcelain'], { cwd: gitRoot });
@@ -81,7 +87,7 @@ async function getAllFilesChanged() {
             }
         }
 
-        filesChangedPromise = null; // Сброс промиса после сбора данных
+        filesChangedPromise._didResolve = true; // Сброс промиса после сбора данных
         return filesChanged;
     })();
 
